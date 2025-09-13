@@ -159,6 +159,10 @@ func TestNew(t *testing.T) {
 		_, statErr := os.Stat("logs/debug.log")
 		assert.NoError(t, statErr)
 
-		t.Cleanup(func() { os.Remove("logs/debug.log") })
+		t.Cleanup(func() {
+			if err := os.Remove("logs/debug.log"); err != nil && !os.IsNotExist(err) {
+				t.Logf("cleanup failed: %v", err)
+			}
+		})
 	})
 }
