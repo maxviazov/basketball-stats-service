@@ -2,73 +2,42 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "develop", "feature/**" ]
+    branches: [ "main", "feature/**" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout source
+      # Step 1: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v5
 
+      # Step 2: Setup Go
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.22.x'
+          go-version: '1.25.x'
           check-latest: true
           cache: true
 
-      - name: Verify dependencies
-        run: go mod tidy && go mod verify
-
-      - name: Build
-        run: go build ./...
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.22.x'
-          check-latest: true
-          cache: true
-
-      - name: Format check
+      # Step 3: Format check
+      - name: Check formatting
         run: test -z "$(gofmt -l .)"
 
+      # Step 4: Vet
       - name: Vet
         run: go vet ./...
 
-      - name: Install golangci-lint
+      # Step 5: Lint
+      - name: Lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           args: --timeout=5m
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.22.x'
-          check-latest: true
-          cache: true
-
-      - name: Run tests
+      # Step 6: Test
+      - name: Test
         run: go test -v -race -cover ./...
