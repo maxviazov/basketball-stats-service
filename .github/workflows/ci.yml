@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "feature/**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Step 2: Setup Go
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.x'
+          check-latest: true
+          cache: true
+
+      # Step 3: Format check
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      # Step 4: Vet
+      - name: Vet
+        run: go vet ./...
+
+      # Step 5: Lint
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          args: --timeout=5m
+
+      # Step 6: Test
+      - name: Test
+        run: go test -v -race -cover ./...

@@ -1,0 +1,35 @@
+app:
+  name: basketball-stats-service
+  version: 0.1.0
+  env: development
+  port: 8080
+
+logger:
+  level: debug                 # debug, info, warn, error
+  format: json                 # json, console
+  output_target: stdout        # stdout, stderr, file
+  file_path: logs/app.log      # используется, если output_target = file
+  time_format: rfc3339         # rfc3339, unix, epoch
+  with_caller: true
+  stacktrace: false
+  stacktrace_min_level: error  # error, fatal, panic
+  fields:                      # кастомные поля
+    service: basketball
+    module: stats
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: r00t
+  name: basketball_db
+  sslmode: disable
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime: 30m
+
+http:
+  read_timeout: 5s
+  write_timeout: 10s
+  idle_timeout: 120s
+  max_header_bytes: 1048576
