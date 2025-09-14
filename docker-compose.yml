@@ -1,22 +1,23 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:16
     container_name: basketball_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-basketball}
+      POSTGRES_USER: ${APP_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${APP_POSTGRES_DB:-basketball}
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-basketball}"]
+      test: ["CMD-SHELL", "pg_isready -U ${APP_POSTGRES_USER:-postgres} -d ${APP_POSTGRES_DB:-basketball}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
   app:
     build: .
     container_name: basketball_app
@@ -24,14 +25,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      DB_HOST: db
-      DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       DB_NAME: ${POSTGRES_DB:-basketball}
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
 
 volumes:
   db_data:

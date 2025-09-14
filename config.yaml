@@ -13,20 +13,19 @@ logger:
   with_caller: true
   stacktrace: false
   stacktrace_min_level: error  # error, fatal, panic
-  fields:                      # кастомные поля
+  fields:
     service: basketball
     module: stats
 
-database:
+postgres:
   host: localhost
   port: 5432
-  user: postgres
-  password: r00t
-  name: basketball_db
   sslmode: disable
-  max_open_conns: 10
-  max_idle_conns: 5
-  conn_max_lifetime: 30m
+  max_conns: 10
+  min_conns: 2
+  max_conn_lifetime: 1800   # seconds
+  max_conn_idle_time: 300   # seconds
+  health_check_period: 30   # seconds
 
 http:
   read_timeout: 5s

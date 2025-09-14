@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/maxviazov/basketball-stats-service/internal/config"
@@ -9,7 +10,7 @@ import (
 
 func main() {
 	// Load application config
-	cfg, err := config.Load("../../config.yaml")
+	cfg, err := config.Load("config.yaml")
 	if err != nil {
 		log.Fatalf("❌ Config loading failed: %v", err)
 	}
@@ -23,4 +24,6 @@ func main() {
 	// Start service
 	appLogger.Info().Msg("🚀 Service started")
 	appLogger.Info().Msg("✅ Logger initialized successfully")
+	appLogger.Info().Msg(fmt.Sprintf("%+v\n", cfg.Postgres))
+	appLogger.Info().Msg("Config loaded successfully")
 }
