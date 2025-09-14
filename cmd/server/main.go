@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 
 	"github.com/maxviazov/basketball-stats-service/internal/config"
 	"github.com/maxviazov/basketball-stats-service/internal/logger"
+	postgres "github.com/maxviazov/basketball-stats-service/internal/repository"
 )
 
 func main() {
@@ -21,9 +22,13 @@ func main() {
 		log.Fatalf("❌ Logger initialization failed: %v", err)
 	}
 
+	connectPgx, err := postgres.New(context.Background(), cfg, &appLogger)
+	if err != nil {
+		log.Fatalf("❌ Postgres connection failed: %v", err)
+	}
+	defer connectPgx.Close()
 	// Start service
 	appLogger.Info().Msg("🚀 Service started")
 	appLogger.Info().Msg("✅ Logger initialized successfully")
-	appLogger.Info().Msg(fmt.Sprintf("%+v\n", cfg.Postgres))
 	appLogger.Info().Msg("Config loaded successfully")
 }
