@@ -2,42 +2,81 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "feature/**" ]
+    branches: [main, feature/**]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-24.04
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: basketball_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d basketball_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/basketball_ci?sslmode=disable
+      CONTRACT_TESTS: "1"
+      APP_POSTGRES_USER: postgres
+      APP_POSTGRES_PASSWORD: postgres
+      APP_POSTGRES_DB: basketball_ci
+
     steps:
-      # Step 1: Checkout repository
       - name: Checkout
         uses: actions/checkout@v5
 
-      # Step 2: Setup Go
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25.x'
+          go-version: 1.25.x
           check-latest: true
           cache: true
 
-      # Step 3: Format check
-      - name: Check formatting
-        run: test -z "$(gofmt -l .)"
+      - name: Go env
+        run: go env
 
-      # Step 4: Vet
+      - name: Check formatting
+        run: |
+          test -z "$(gofmt -l .)" || (echo "gofmt found unformatted files"; gofmt -l .; exit 1)
+
       - name: Vet
         run: go vet ./...
 
-      # Step 5: Lint
-      - name: Lint
+      - name: Lint (golangci-lint)
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           args: --timeout=5m
 
-      # Step 6: Test
-      - name: Test
-        run: go test -v -race -cover ./...
+      - name: Apply DB migrations (goose)
+        run: |
+          go run github.com/pressly/goose/v3/cmd/goose@latest -dir ./migrations/goose_sql postgres "$DATABASE_URL" up
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -d basketball_ci -U postgres && break
+            echo "waiting for postgres..."; sleep 2
+          done
+
+      - name: Run tests (unit + integration + contract)
+        run: go test -race -cover ./...
+
+      - name: Generate coverage report
+        run: go test -coverprofile=coverage.out ./...
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
