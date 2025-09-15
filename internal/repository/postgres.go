@@ -19,6 +19,10 @@ type Repository struct {
 	pool *pgxpool.Pool
 }
 
+// Pool exposes the underlying pgx pool for repository wiring.
+// I keep the type opaque elsewhere, but allow explicit access at composition roots.
+func (r *Repository) Pool() *pgxpool.Pool { return r.pool }
+
 // New builds a new Postgres-backed repository using pgxpool.
 // I construct the DSN explicitly to avoid subtle quoting issues and then fine-tune the pool.
 func New(ctx context.Context, cfg *config.Config, logger zerolog.Logger) (*Repository, error) {

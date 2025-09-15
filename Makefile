@@ -49,6 +49,16 @@ test:
 	@echo "$(YELLOW)🧪 Running tests...$(NC)"
 	@$(GOTEST) -v -race -cover ./...
 
+## Run repository contract tests against a real Postgres
+# Requires a running DB and proper env (can be provided via .env)
+# Example: make test-contract
+test-contract:
+	@echo "$(YELLOW)🔗 Running repository contract tests...$(NC)"
+	@set -a; \
+	. .env 2>/dev/null || true; \
+	set +a; \
+	CONTRACT_TESTS=1 $(GO) test ./internal/repository/... -run Contract -race -count=1 -v
+
 ## Check formatting
 fmt:
 	@echo "$(YELLOW)🎨 Checking formatting...$(NC)"
