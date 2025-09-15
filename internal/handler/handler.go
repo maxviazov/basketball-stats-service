@@ -2,14 +2,15 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/maxviazov/basketball-stats-service/internal/service"
 )
 
 // Register mounts all public routes on the given engine.
-// I accept the minimal Pinger interface to keep routing independent from storage details.
-func Register(r *gin.Engine, repo Pinger) {
+// Accepts service layer dependencies for API endpoints.
+func Register(r *gin.Engine, repo Pinger, teamSvc service.TeamService, playerSvc service.PlayerService, gameSvc service.GameService, statsSvc service.StatsService) {
 	h := NewHealthHandler(repo)
 
-	// Top-level health aliases for common probes (e.g., /ready, /live)
+	// Health probes
 	r.GET("/live", h.Liveness)
 	r.GET("/ready", h.Readiness)
 
@@ -20,5 +21,9 @@ func Register(r *gin.Engine, repo Pinger) {
 			health.GET("/live", h.Liveness)
 			health.GET("/ready", h.Readiness)
 		}
+		NewTeamHandler(teamSvc).Register(api)
+		NewPlayerHandler(playerSvc).Register(api)
+		NewGameHandler(gameSvc).Register(api)
+		NewStatsHandler(statsSvc).Register(api)
 	}
 }

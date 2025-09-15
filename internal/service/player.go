@@ -22,26 +22,47 @@ func NewPlayerService(players repository.PlayerRepository, teams repository.Team
 }
 
 func (s *playerService) CreatePlayer(ctx context.Context, teamID int64, firstName, lastName, position string) (model.Player, error) {
-	if teamID <= 0 {
-		return model.Player{}, ErrInvalidInput
-	}
+	start := time.Now()
+	rawFirst, rawLast, rawPos := firstName, lastName, position
+
+	// Normalize early so validation and persistence see canonical values.
 	firstName = strings.TrimSpace(firstName)
 	lastName = strings.TrimSpace(lastName)
-	position = strings.TrimSpace(position)
-	if firstName == "" || lastName == "" || !isValidPosition(position) {
-		return model.Player{}, ErrInvalidInput
+	position = normalizePosition(position)
+
+	var ferrs []FieldError
+	if teamID <= 0 {
+		ferrs = append(ferrs, FieldError{Field: "team_id", Message: "must be > 0"})
 	}
-	// Optionally verify team exists (cheap read)
-	if _, err := s.teams.GetByID(ctx, teamID); err != nil {
+	if firstName == "" {
+		ferrs = append(ferrs, FieldError{Field: "first_name", Message: "must not be empty"})
+	} else if ln := len([]rune(firstName)); ln > 50 {
+		ferrs = append(ferrs, FieldError{Field: "first_name", Message: "length must be <= 50"})
+	}
+	if lastName == "" {
+		ferrs = append(ferrs, FieldError{Field: "last_name", Message: "must not be empty"})
+	} else if ln := len([]rune(lastName)); ln > 50 {
+		ferrs = append(ferrs, FieldError{Field: "last_name", Message: "length must be <= 50"})
+	}
+	if !isValidPosition(position) { // after normalizePosition
+		ferrs = append(ferrs, FieldError{Field: "position", Message: "must be one of PG, SG, SF, PF, C"})
+	}
+
+	if err := newInvalidInput(ferrs); err != nil {
+		s.log.Debug().Interface("field_errors", ferrs).Str("fn_raw", rawFirst).Str("ln_raw", rawLast).Str("pos_raw", rawPos).Msg("player validation failed")
 		return model.Player{}, err
 	}
-	start := time.Now()
-	out, err := s.players.Create(ctx, model.Player{
-		TeamID:    teamID,
-		FirstName: firstName,
-		LastName:  lastName,
-		Position:  position,
-	})
+
+	// Existence check improves client UX vs deferring to FK violation.
+	if _, err := s.teams.GetByID(ctx, teamID); err != nil {
+		if err == repository.ErrNotFound { // cheap direct compare; could use errors.Is if wrapped
+			ferrs = append(ferrs, FieldError{Field: "team_id", Message: "team does not exist"})
+			return model.Player{}, newInvalidInput(ferrs)
+		}
+		return model.Player{}, err
+	}
+
+	out, err := s.players.Create(ctx, model.Player{TeamID: teamID, FirstName: firstName, LastName: lastName, Position: position})
 	if err != nil {
 		s.log.Error().Err(err).Int64("team_id", teamID).Str("fn", firstName).Str("ln", lastName).Msg("create player failed")
 		return model.Player{}, err
@@ -52,14 +73,14 @@ func (s *playerService) CreatePlayer(ctx context.Context, teamID int64, firstNam
 
 func (s *playerService) GetPlayer(ctx context.Context, id int64) (model.Player, error) {
 	if id <= 0 {
-		return model.Player{}, ErrInvalidInput
+		return model.Player{}, newInvalidInput([]FieldError{{Field: "id", Message: "must be > 0"}})
 	}
 	return s.players.GetByID(ctx, id)
 }
 
 func (s *playerService) ListPlayersByTeam(ctx context.Context, teamID int64, page repository.Page) (repository.PageResult[model.Player], error) {
 	if teamID <= 0 {
-		return repository.PageResult[model.Player]{}, ErrInvalidInput
+		return repository.PageResult[model.Player]{}, newInvalidInput([]FieldError{{Field: "team_id", Message: "must be > 0"}})
 	}
 	p := normalizePage(page)
 	res, err := s.players.ListByTeam(ctx, teamID, p)

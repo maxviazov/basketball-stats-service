@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/maxviazov/basketball-stats-service/internal/model"
@@ -22,27 +24,61 @@ func NewGameService(games repository.GameRepository, teams repository.TeamReposi
 }
 
 func (s *gameService) CreateGame(ctx context.Context, season string, date time.Time, homeID, awayID int64, status string) (model.Game, error) {
-	if homeID <= 0 || awayID <= 0 || homeID == awayID {
-		return model.Game{}, ErrInvalidInput
+	// Normalize input strings
+	seasonTrimmed := strings.TrimSpace(season)
+	statusNorm := normalizeStatus(status)
+
+	var ferrs []FieldError
+	if homeID <= 0 {
+		ferrs = append(ferrs, FieldError{Field: "home_team_id", Message: "must be > 0"})
+	}
+	if awayID <= 0 {
+		ferrs = append(ferrs, FieldError{Field: "away_team_id", Message: "must be > 0"})
+	}
+	if homeID > 0 && awayID > 0 && homeID == awayID {
+		ferrs = append(ferrs, FieldError{Field: "teams", Message: "home and away must differ"})
 	}
 	if date.IsZero() {
-		return model.Game{}, ErrInvalidInput
+		ferrs = append(ferrs, FieldError{Field: "date", Message: "must be set"})
 	}
-	if !isValidGameStatus(status) {
-		return model.Game{}, ErrInvalidInput
+	if seasonTrimmed == "" || !isValidSeason(seasonTrimmed) {
+		ferrs = append(ferrs, FieldError{Field: "season", Message: "invalid format, expected YYYY-YY"})
+	}
+	if !isValidGameStatus(statusNorm) {
+		ferrs = append(ferrs, FieldError{Field: "status", Message: "must be one of scheduled|in_progress|finished"})
 	}
 
+	// Early exit if basic structure is invalid – do not touch the database.
+	if err := newInvalidInput(ferrs); err != nil {
+		s.log.Debug().Interface("field_errors", ferrs).Msg("game validation failed (structure)")
+		return model.Game{}, err
+	}
+
+	// Existence checks before attempting persistence.
+	var existenceErrs []FieldError
+	if _, err := s.teams.GetByID(ctx, homeID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			existenceErrs = append(existenceErrs, FieldError{Field: "home_team_id", Message: "team does not exist"})
+		} else {
+			return model.Game{}, err
+		}
+	}
+	if _, err := s.teams.GetByID(ctx, awayID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			existenceErrs = append(existenceErrs, FieldError{Field: "away_team_id", Message: "team does not exist"})
+		} else {
+			return model.Game{}, err
+		}
+	}
+	if err := newInvalidInput(existenceErrs); err != nil {
+		s.log.Debug().Interface("field_errors", existenceErrs).Msg("game validation failed (existence)")
+		return model.Game{}, err
+	}
+
+	// One INSERT – transaction is redundant, but we leave the generalization: maybe accompanying records will appear.
 	var out model.Game
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		// Validate both teams exist
-		if _, err := s.teams.GetByID(ctx, homeID); err != nil {
-			return err
-		}
-		if _, err := s.teams.GetByID(ctx, awayID); err != nil {
-			return err
-		}
-		g := model.Game{Season: season, Date: date, HomeTeamID: homeID, AwayTeamID: awayID, Status: status}
-		created, err := s.games.Create(ctx, g)
+		created, err := s.games.Create(ctx, model.Game{Season: seasonTrimmed, Date: date, HomeTeamID: homeID, AwayTeamID: awayID, Status: statusNorm})
 		if err != nil {
 			return err
 		}
@@ -58,7 +94,7 @@ func (s *gameService) CreateGame(ctx context.Context, season string, date time.T
 
 func (s *gameService) GetGame(ctx context.Context, id int64) (model.Game, error) {
 	if id <= 0 {
-		return model.Game{}, ErrInvalidInput
+		return model.Game{}, newInvalidInput([]FieldError{{Field: "id", Message: "must be > 0"}})
 	}
 	return s.games.GetByID(ctx, id)
 }

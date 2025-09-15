@@ -1,5 +1,5 @@
 // Package service holds business logic orchestration across repositories and handlers.
-// I keep this minimal until concrete use-cases arrive to avoid speculative abstractions.
+// Kept intentionally lean: only use-case coordination, validation and domain error shaping.
 package service
 
 import (
@@ -11,8 +11,44 @@ import (
 	"github.com/maxviazov/basketball-stats-service/internal/repository"
 )
 
-// ErrInvalidInput signals domain validation errors suitable for HTTP 400 mapping.
+// ErrInvalidInput is the marker error for aggregated validation failures (maps to HTTP 400).
+// Field-level details are retrieved via FieldErrors(err).
 var ErrInvalidInput = errors.New("invalid input")
+
+// FieldError describes a single invalid field in a client request.
+type FieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+// invalidInputError aggregates multiple FieldError instances and unwraps to ErrInvalidInput.
+type invalidInputError struct {
+	fields []FieldError
+}
+
+func (e *invalidInputError) Error() string        { return ErrInvalidInput.Error() }
+func (e *invalidInputError) Unwrap() error        { return ErrInvalidInput }
+func (e *invalidInputError) Fields() []FieldError { return e.fields }
+
+// newInvalidInput builds an aggregated validation error if any field errors are present.
+func newInvalidInput(fe []FieldError) error {
+	if len(fe) == 0 { // protective case
+		return nil
+	}
+	return &invalidInputError{fields: fe}
+}
+
+// FieldErrors extracts field errors from an aggregated validation error.
+func FieldErrors(err error) []FieldError {
+	if err == nil {
+		return nil
+	}
+	type feIface interface{ Fields() []FieldError }
+	if v, ok := err.(feIface); ok && errors.Is(err, ErrInvalidInput) {
+		return v.Fields()
+	}
+	return nil
+}
 
 // TeamService defines team-oriented use cases.
 type TeamService interface {

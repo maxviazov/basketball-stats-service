@@ -15,6 +15,8 @@ import (
 	"github.com/maxviazov/basketball-stats-service/internal/handler"
 	"github.com/maxviazov/basketball-stats-service/internal/logger"
 	"github.com/maxviazov/basketball-stats-service/internal/repository"
+	repoPg "github.com/maxviazov/basketball-stats-service/internal/repository/postgres"
+	"github.com/maxviazov/basketball-stats-service/internal/service"
 )
 
 func main() {
@@ -42,12 +44,25 @@ func main() {
 	}
 	defer repo.Close()
 
+	// Wire repositories (postgres implementations) and services
+	pool := repo.Pool()
+	teamRepo := repoPg.NewTeamRepository(pool)
+	playerRepo := repoPg.NewPlayerRepository(pool)
+	gameRepo := repoPg.NewGameRepository(pool)
+	statsRepo := repoPg.NewStatsRepository(pool)
+	txManager := repoPg.NewTxManager(pool)
+
+	teamSvc := service.NewTeamService(teamRepo, appLogger)
+	playerSvc := service.NewPlayerService(playerRepo, teamRepo, appLogger)
+	gameSvc := service.NewGameService(gameRepo, teamRepo, txManager, appLogger)
+	statsSvc := service.NewStatsService(statsRepo, playerRepo, gameRepo, txManager, appLogger)
+
 	// HTTP server (Gin)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
 
-	handler.Register(r, repo)
+	handler.Register(r, repo, teamSvc, playerSvc, gameSvc, statsSvc)
 
 	addr := fmt.Sprintf(":%d", cfg.App.Port)
 	srv := &http.Server{
