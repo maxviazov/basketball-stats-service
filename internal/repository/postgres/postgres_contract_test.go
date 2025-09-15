@@ -65,7 +65,9 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 	pool.Close()
-	db.Close()
+	if err := db.Close(); err != nil {
+		fmt.Println("[contract] db close error:", err)
+	}
 	os.Exit(code)
 }
 
