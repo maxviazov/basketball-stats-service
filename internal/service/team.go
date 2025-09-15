@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// teamService holds team use-case logic: validation + orchestration, no transport / SQL details.
 type teamService struct {
 	repo repository.TeamRepository
 	log  zerolog.Logger
@@ -21,13 +22,26 @@ func NewTeamService(repo repository.TeamRepository, logger zerolog.Logger) TeamS
 }
 
 func (s *teamService) CreateTeam(ctx context.Context, name string) (model.Team, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return model.Team{}, ErrInvalidInput
-	}
 	start := time.Now()
+	original := name
+	name = strings.TrimSpace(name)
+
+	var ferrs []FieldError
+	if name == "" {
+		ferrs = append(ferrs, FieldError{Field: "name", Message: "must not be empty"})
+	} else {
+		if ln := len([]rune(name)); ln < 2 || ln > 50 {
+			ferrs = append(ferrs, FieldError{Field: "name", Message: "length must be between 2 and 50"})
+		}
+	}
+	if err := newInvalidInput(ferrs); err != nil {
+		s.log.Debug().Str("name_raw", original).Interface("field_errors", ferrs).Msg("team validation failed")
+		return model.Team{}, err
+	}
+
 	out, err := s.repo.Create(ctx, model.Team{Name: name})
 	if err != nil {
+		// Repository surfaces domain-level errors already, do not wrap.
 		s.log.Error().Err(err).Str("name", name).Msg("create team failed")
 		return model.Team{}, err
 	}
@@ -37,7 +51,7 @@ func (s *teamService) CreateTeam(ctx context.Context, name string) (model.Team, 
 
 func (s *teamService) GetTeam(ctx context.Context, id int64) (model.Team, error) {
 	if id <= 0 {
-		return model.Team{}, ErrInvalidInput
+		return model.Team{}, newInvalidInput([]FieldError{{Field: "id", Message: "must be > 0"}})
 	}
 	return s.repo.GetByID(ctx, id)
 }

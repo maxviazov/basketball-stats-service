@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     runs-on: ubuntu-24.04
@@ -59,24 +63,33 @@ jobs:
           version: latest
           args: --timeout=5m
 
-      - name: Apply DB migrations (goose)
-        run: |
-          go run github.com/pressly/goose/v3/cmd/goose@latest -dir ./migrations/goose_sql postgres "$DATABASE_URL" up
-
-      - name: Wait for Postgres
+      - name: Wait for Postgres (service health)
         run: |
           for i in {1..30}; do
             pg_isready -h localhost -p 5432 -d basketball_ci -U postgres && break
             echo "waiting for postgres..."; sleep 2
           done
 
-      - name: Run tests (unit + integration + contract)
-        run: go test -race -cover ./...
+      - name: Apply DB migrations (goose up)
+        run: |
+          go run github.com/pressly/goose/v3/cmd/goose@latest -dir ./migrations/goose_sql postgres "$DATABASE_URL" up
 
-      - name: Generate coverage report
-        run: go test -coverprofile=coverage.out ./...
-      - name: Upload coverage
+      - name: Show migration status
+        run: |
+          go run github.com/pressly/goose/v3/cmd/goose@latest -dir ./migrations/goose_sql postgres "$DATABASE_URL" status || true
+
+      - name: Run tests (unit + contract) with coverage
+        run: |
+          make test
+
+      - name: Upload coverage artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: coverage.out
+
+      - name: Coverage summary
+        if: success()
+        run: |
+          go tool cover -func=coverage.out | tail -n 1

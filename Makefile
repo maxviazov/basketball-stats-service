@@ -45,9 +45,18 @@ run:
 	go run ./cmd/server
 
 ## Run tests
+# Используем -coverpkg=./... чтобы инструментировать все пакеты, даже если тесты физически вынесены в ./test/.
+# Так мы получим реальное покрытие, а не 0.0% по internal/*.
+# coverage.out пригодится для CI (загрузка в badge / codecov при желании).
 test:
-	@echo "$(YELLOW)🧪 Running tests...$(NC)"
-	@$(GOTEST) -v -race -cover ./...
+	@echo "$(YELLOW)🧪 Running tests (with aggregated coverage)...$(NC)"
+	@$(GOTEST) -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+	@$(GO) tool cover -func=coverage.out | tail -n 1
+
+## Human friendly HTML coverage (optional)
+test-html: test
+	@$(GO) tool cover -html=coverage.out -o coverage.html
+	@echo "$(GREEN)📊 Open coverage.html in browser for detailed report$(NC)"
 
 ## Run repository contract tests against a real Postgres
 # Requires a running DB and proper env (can be provided via .env)
@@ -57,7 +66,7 @@ test-contract:
 	@set -a; \
 	. .env 2>/dev/null || true; \
 	set +a; \
-	CONTRACT_TESTS=1 $(GO) test ./internal/repository/... -run Contract -race -count=1 -v
+	CONTRACT_TESTS=1 $(GO) test ./test/repository -run PostgresContract -race -count=1 -v
 
 ## Check formatting
 fmt:
@@ -175,3 +184,6 @@ help:
 ## Run full CI pipeline locally (fmt + vet + lint + test)
 ci: fmt vet lint test
 	@echo "$(GREEN)✅ CI checks passed$(NC)"
+
+# Declare phony targets (directories with same names exist: e.g. test/). Without this, make thinks they are up to date.
+.PHONY: build run test test-html test-contract fmt vet lint deps migrate-up migrate-down migrate-status migrate-dsn migrate-create docker-up docker-down docker-clean help ci
