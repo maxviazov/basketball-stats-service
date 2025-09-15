@@ -7,20 +7,21 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// pgxLogger адаптирует zerolog.Logger для использования с pgx tracelog.
+// pgxLogger adapts zerolog.Logger to pgx's tracelog interface.
+// I keep this tiny and allocation-friendly, only translating levels and passing fields through.
 type pgxLogger struct {
 	logger zerolog.Logger
 }
 
-// newPgxLogger создает новый адаптер.
-// Он также создает дочерний логгер с полем "component":"pgx" для контекста.
+// newPgxLogger builds a child logger scoped to the pgx component.
+// I like to tag component explicitly so SQL noise stays filterable.
 func newPgxLogger(logger zerolog.Logger) *pgxLogger {
 	l := logger.With().Str("component", "pgx").Logger()
 	return &pgxLogger{logger: l}
 }
 
-// Log реализует интерфейс tracelog.Logger.
-// Он преобразует уровень логирования pgx в уровень zerolog и записывает сообщение.
+// Log implements tracelog.Logger by mapping pgx levels to zerolog and
+// adding commonly useful fields, such as SQL and args, when present.
 func (l *pgxLogger) Log(_ context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
 	if level == tracelog.LogLevelNone {
 		return
@@ -30,9 +31,8 @@ func (l *pgxLogger) Log(_ context.Context, level tracelog.LogLevel, msg string, 
 
 	switch level {
 	case tracelog.LogLevelTrace:
-		// Трассируем SQL-запросы на уровне Trace.
+		// I trace SQL at the most verbose level; it’s invaluable during debugging.
 		event = l.logger.Trace()
-		// Специальная обработка для SQL-запросов для лучшей читаемости.
 		if sqlVal, ok := data["sql"]; ok {
 			if s, ok := sqlVal.(string); ok {
 				event = event.Str("sql", s)
@@ -54,11 +54,10 @@ func (l *pgxLogger) Log(_ context.Context, level tracelog.LogLevel, msg string, 
 	case tracelog.LogLevelError:
 		event = l.logger.Error()
 	default:
-		// Для неизвестных уровней используем Info и добавляем оригинальный уровень в поле.
+		// If pgx adds new levels, I'll fall back to info and keep the original level as a field.
 		event = l.logger.Info().Str("pgx_log_level", level.String())
 	}
 
-	// Добавляем остальные поля, если они есть.
 	if len(data) > 0 {
 		event = event.Fields(data)
 	}

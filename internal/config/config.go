@@ -6,6 +6,13 @@ import (
 	"github.com/maxviazov/basketball-stats-service/internal/logger"
 )
 
+type AppConfig struct {
+	Name    string `mapstructure:"name"`
+	Version string `mapstructure:"version"`
+	Env     string `mapstructure:"env"`
+	Port    int    `mapstructure:"port"`
+}
+
 type PostgresConfig struct {
 	Host              string `mapstructure:"host"`
 	Port              int    `mapstructure:"port"`
@@ -32,6 +39,7 @@ func (p PostgresConfig) String() string {
 }
 
 type Config struct {
+	App      AppConfig           `mapstructure:"app"`
 	Logger   logger.LoggerConfig `mapstructure:"logger"`
 	Postgres PostgresConfig      `mapstructure:"postgres"`
 }

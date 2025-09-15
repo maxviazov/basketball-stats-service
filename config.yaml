@@ -8,7 +8,7 @@ logger:
   level: debug                 # debug, info, warn, error
   format: json                 # json, console
   output_target: stdout        # stdout, stderr, file
-  file_path: logs/app.log      # используется, если output_target = file
+  file_path: logs/app.log      # used when output_target = file
   time_format: rfc3339         # rfc3339, unix, epoch
   with_caller: true
   stacktrace: false
