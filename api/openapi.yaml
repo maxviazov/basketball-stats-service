@@ -5,6 +5,7 @@ info:
   description: HTTP API for teams, players, games and stats, including aggregated endpoints.
 servers:
   - url: /api/v1
+security: []
 paths:
   /health/live:
     get:
