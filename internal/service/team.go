@@ -65,3 +65,28 @@ func (s *teamService) ListTeams(ctx context.Context, page repository.Page) (repo
 	}
 	return res, nil
 }
+
+// GetTeamAggregatedStats retrieves and validates parameters for fetching team statistics.
+// It ensures the team ID is valid and the season format is correct if provided.
+func (s *teamService) GetTeamAggregatedStats(ctx context.Context, teamID int64, season *string) (model.TeamAggregatedStats, error) {
+	var ferrs []FieldError
+	if teamID <= 0 {
+		ferrs = append(ferrs, FieldError{Field: "id", Message: "must be > 0"})
+	}
+	// A non-nil season string must conform to the expected format.
+	if season != nil && !isValidSeason(*season) {
+		ferrs = append(ferrs, FieldError{Field: "season", Message: "must be in YYYY-YY format"})
+	}
+	if err := newInvalidInput(ferrs); err != nil {
+		return model.TeamAggregatedStats{}, err
+	}
+
+	stats, err := s.repo.GetTeamAggregatedStats(ctx, teamID, season)
+	if err != nil {
+		// Not expecting ErrNotFound here, but logging just in case.
+		s.log.Error().Err(err).Int64("team_id", teamID).Msg("failed to get team aggregated stats")
+		return model.TeamAggregatedStats{}, err
+	}
+
+	return stats, nil
+}

@@ -38,6 +38,9 @@ func (f *fakePlayerLookup) GetByID(_ context.Context, id int64) (model.Player, e
 func (f *fakePlayerLookup) ListByTeam(context.Context, int64, repository.Page) (repository.PageResult[model.Player], error) {
 	return repository.PageResult[model.Player]{}, nil
 }
+func (f *fakePlayerLookup) GetPlayerAggregatedStats(context.Context, int64, *string) (model.PlayerAggregatedStats, error) {
+	return model.PlayerAggregatedStats{}, nil // Dummy implementation
+}
 
 var _ repository.PlayerRepository = (*fakePlayerLookup)(nil)
 

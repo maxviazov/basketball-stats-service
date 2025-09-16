@@ -51,3 +51,28 @@ type PlayerStatLine struct {
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
+
+// PlayerAggregatedStats holds calculated statistics for a player, such as career totals or seasonal averages.
+// This model is designed for read-only query results and is not persisted directly.
+type PlayerAggregatedStats struct {
+	GamesPlayed   int     `json:"games_played"`
+	TotalPoints   int     `json:"total_points"`
+	TotalRebounds int     `json:"total_rebounds"`
+	TotalAssists  int     `json:"total_assists"`
+	TotalSteals   int     `json:"total_steals"`
+	TotalBlocks   int     `json:"total_blocks"`
+	AvgPoints     float32 `json:"avg_points"`
+	AvgRebounds   float32 `json:"avg_rebounds"`
+	AvgAssists    float32 `json:"avg_assists"`
+}
+
+// TeamAggregatedStats provides a summary of a team's performance, including win-loss record and point differentials.
+// It's a read-only model derived from game results.
+type TeamAggregatedStats struct {
+	Wins             int     `json:"wins"`
+	Losses           int     `json:"losses"`
+	TotalPointsScored int     `json:"total_points_scored"`
+	TotalPointsAllowed int     `json:"total_points_allowed"`
+	AvgPointsScored  float32 `json:"avg_points_scored"`
+	AvgPointsAllowed float32 `json:"avg_points_allowed"`
+}

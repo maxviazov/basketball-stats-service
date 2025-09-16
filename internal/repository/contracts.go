@@ -28,6 +28,9 @@ type TeamRepository interface {
 	Create(ctx context.Context, t model.Team) (model.Team, error)
 	GetByID(ctx context.Context, id int64) (model.Team, error)
 	List(ctx context.Context, p Page) (PageResult[model.Team], error)
+	// GetTeamAggregatedStats calculates a team's performance stats, optionally filtered by season.
+	// A nil season returns career stats across all seasons.
+	GetTeamAggregatedStats(ctx context.Context, teamID int64, season *string) (model.TeamAggregatedStats, error)
 }
 
 // PlayerRepository declares persistence operations for players.
@@ -35,6 +38,9 @@ type PlayerRepository interface {
 	Create(ctx context.Context, p model.Player) (model.Player, error)
 	GetByID(ctx context.Context, id int64) (model.Player, error)
 	ListByTeam(ctx context.Context, teamID int64, p Page) (PageResult[model.Player], error)
+	// GetPlayerAggregatedStats calculates a player's stats, optionally filtered by season.
+	// A nil season returns career stats.
+	GetPlayerAggregatedStats(ctx context.Context, playerID int64, season *string) (model.PlayerAggregatedStats, error)
 }
 
 // GameRepository declares persistence operations for games.

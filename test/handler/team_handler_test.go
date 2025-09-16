@@ -2,12 +2,11 @@ package handler_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"context"
 
 	"github.com/gin-gonic/gin"
 	"github.com/maxviazov/basketball-stats-service/internal/handler"
@@ -42,6 +41,10 @@ type stubTeamService struct {
 		res repository.PageResult[model.Team]
 		err error
 	}
+	stats struct { // Added for stats endpoint
+		res model.TeamAggregatedStats
+		err error
+	}
 }
 
 func (s *stubTeamService) CreateTeam(ctx context.Context, name string) (model.Team, error) {
@@ -52,6 +55,9 @@ func (s *stubTeamService) GetTeam(ctx context.Context, id int64) (model.Team, er
 }
 func (s *stubTeamService) ListTeams(ctx context.Context, p repository.Page) (repository.PageResult[model.Team], error) {
 	return s.list.res, s.list.err
+}
+func (s *stubTeamService) GetTeamAggregatedStats(ctx context.Context, teamID int64, season *string) (model.TeamAggregatedStats, error) {
+	return s.stats.res, s.stats.err // Dummy implementation
 }
 
 func newRouter(ts service.TeamService) *gin.Engine {
