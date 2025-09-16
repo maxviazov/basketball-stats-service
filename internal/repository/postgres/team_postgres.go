@@ -98,10 +98,10 @@ func (r *teamRepository) GetTeamAggregatedStats(ctx context.Context, teamID int6
 			SELECT
 				g.id AS game_id,
 				p.team_id,
-				SUM(psl.points) AS points
-			FROM player_stat_lines psl
-			JOIN games g ON psl.game_id = g.id
-			JOIN players p ON psl.player_id = p.id
+				SUM(ps.points) AS points
+			FROM player_stats ps
+			JOIN games g ON ps.game_id = g.id
+			JOIN players p ON ps.player_id = p.id
 			WHERE g.status = 'finished'
 			GROUP BY g.id, p.team_id
 		),
