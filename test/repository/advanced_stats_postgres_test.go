@@ -55,9 +55,9 @@ func TestAdvancedStatsPostgres(t *testing.T) {
 			stats, err := playerRepo.GetPlayerAggregatedStats(ctx, p1.ID, nil)
 			require.NoError(t, err)
 			require.Equal(t, 3, stats.GamesPlayed)
-			require.Equal(t, 77, stats.TotalPoints)   // 25 + 30 + 22
-			require.Equal(t, 24, stats.TotalRebounds) // 8 + 10 + 6
-			require.Equal(t, 21, stats.TotalAssists)  // 7 + 5 + 9
+			require.Equal(t, 77, stats.TotalPoints)      // 25 + 30 + 22
+			require.Equal(t, 24, stats.TotalRebounds)    // 8 + 10 + 6
+			require.Equal(t, 21, stats.TotalAssists)     // 7 + 5 + 9
 			require.InEpsilon(t, 25.66, stats.AvgPoints, 0.01)
 		})
 
@@ -91,9 +91,9 @@ func TestAdvancedStatsPostgres(t *testing.T) {
 		t.Run("Career Stats", func(t *testing.T) {
 			stats, err := teamRepo.GetTeamAggregatedStats(ctx, t1.ID, nil) // Lakers
 			require.NoError(t, err)
-			require.Equal(t, 2, stats.Wins)                // g1, g3
-			require.Equal(t, 1, stats.Losses)              // g2
-			require.Equal(t, 77, stats.TotalPointsScored)  // 25 + 30 + 22
+			require.Equal(t, 2, stats.Wins)       // g1, g3
+			require.Equal(t, 1, stats.Losses)     // g2
+			require.Equal(t, 77, stats.TotalPointsScored) // 25 + 30 + 22
 			require.Equal(t, 73, stats.TotalPointsAllowed) // 20 + 35 + 18
 		})
 
@@ -103,7 +103,7 @@ func TestAdvancedStatsPostgres(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, 1, stats.Wins)
 			require.Equal(t, 1, stats.Losses)
-			require.Equal(t, 55, stats.TotalPointsScored)  // 25 + 30
+			require.Equal(t, 55, stats.TotalPointsScored) // 25 + 30
 			require.Equal(t, 55, stats.TotalPointsAllowed) // 20 + 35
 		})
 	})

@@ -69,10 +69,10 @@ type PlayerAggregatedStats struct {
 // TeamAggregatedStats provides a summary of a team's performance, including win-loss record and point differentials.
 // It's a read-only model derived from game results.
 type TeamAggregatedStats struct {
-	Wins               int     `json:"wins"`
-	Losses             int     `json:"losses"`
-	TotalPointsScored  int     `json:"total_points_scored"`
+	Wins             int     `json:"wins"`
+	Losses           int     `json:"losses"`
+	TotalPointsScored int     `json:"total_points_scored"`
 	TotalPointsAllowed int     `json:"total_points_allowed"`
-	AvgPointsScored    float32 `json:"avg_points_scored"`
-	AvgPointsAllowed   float32 `json:"avg_points_allowed"`
+	AvgPointsScored  float32 `json:"avg_points_scored"`
+	AvgPointsAllowed float32 `json:"avg_points_allowed"`
 }
