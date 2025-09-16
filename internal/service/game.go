@@ -41,7 +41,7 @@ func (s *gameService) CreateGame(ctx context.Context, season string, date time.T
 	if date.IsZero() {
 		ferrs = append(ferrs, FieldError{Field: "date", Message: "must be set"})
 	}
-	if seasonTrimmed == "" || !isValidSeason(seasonTrimmed) {
+	if seasonTrimmed == "" || !IsValidSeason(seasonTrimmed) {
 		ferrs = append(ferrs, FieldError{Field: "season", Message: "invalid format, expected YYYY-YY"})
 	}
 	if !isValidGameStatus(statusNorm) {
@@ -49,7 +49,7 @@ func (s *gameService) CreateGame(ctx context.Context, season string, date time.T
 	}
 
 	// Early exit if basic structure is invalid – do not touch the database.
-	if err := newInvalidInput(ferrs); err != nil {
+	if err := NewInvalidInputError(ferrs); err != nil {
 		s.log.Debug().Interface("field_errors", ferrs).Msg("game validation failed (structure)")
 		return model.Game{}, err
 	}
@@ -70,7 +70,7 @@ func (s *gameService) CreateGame(ctx context.Context, season string, date time.T
 			return model.Game{}, err
 		}
 	}
-	if err := newInvalidInput(existenceErrs); err != nil {
+	if err := NewInvalidInputError(existenceErrs); err != nil {
 		s.log.Debug().Interface("field_errors", existenceErrs).Msg("game validation failed (existence)")
 		return model.Game{}, err
 	}
@@ -94,7 +94,7 @@ func (s *gameService) CreateGame(ctx context.Context, season string, date time.T
 
 func (s *gameService) GetGame(ctx context.Context, id int64) (model.Game, error) {
 	if id <= 0 {
-		return model.Game{}, newInvalidInput([]FieldError{{Field: "id", Message: "must be > 0"}})
+		return model.Game{}, NewInvalidInputError([]FieldError{{Field: "id", Message: "must be > 0"}})
 	}
 	return s.games.GetByID(ctx, id)
 }

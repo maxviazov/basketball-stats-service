@@ -60,6 +60,9 @@ func (f *fakeExistTeamRepo) List(context.Context, repository.Page) (repository.P
 func (f *fakeExistTeamRepo) GetTeamAggregatedStats(context.Context, int64, *string) (model.TeamAggregatedStats, error) {
 	return model.TeamAggregatedStats{}, nil // Dummy implementation
 }
+func (f *fakeExistTeamRepo) Exists(_ context.Context, id int64) (bool, error) {
+	return f.exist[id], nil
+}
 
 var _ repository.TeamRepository = (*fakeExistTeamRepo)(nil)
 

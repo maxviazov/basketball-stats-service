@@ -81,6 +81,20 @@ func (r *teamRepository) List(ctx context.Context, p repository.Page) (repositor
 	return res, nil
 }
 
+// Exists performs a lightweight check to see if a team with the given ID exists.
+func (r *teamRepository) Exists(ctx context.Context, id int64) (bool, error) {
+	if err := ensurePool(r.pool); err != nil {
+		return false, err
+	}
+	var exists bool
+	exec := getQ(ctx, r.pool)
+	err := exec.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM teams WHERE id = $1)`, id).Scan(&exists)
+	if err != nil {
+		return false, repository.MapPgError(err)
+	}
+	return exists, nil
+}
+
 // GetTeamAggregatedStats calculates and returns a team's aggregated statistics.
 // It can filter by season; a nil season returns career stats.
 // This query is complex:

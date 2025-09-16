@@ -73,7 +73,7 @@ func TestTeamHandler_Create_OK(t *testing.T) {
 	r := newRouter(stub)
 	body, _ := json.Marshal(map[string]string{"name": "Lakers"})
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/teams", bytes.NewReader(body)))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/teams", bytes.NewReader(body)))
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
 	}
@@ -89,7 +89,7 @@ func TestTeamHandler_Create_Invalid(t *testing.T) {
 	r := newRouter(stub)
 	body, _ := json.Marshal(map[string]string{"name": ""})
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/teams", bytes.NewReader(body)))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/teams", bytes.NewReader(body)))
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
 	}
@@ -103,7 +103,7 @@ func TestTeamHandler_Get_NotFound(t *testing.T) {
 	stub.get.err = repository.ErrNotFound
 	r := newRouter(stub)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/teams/42", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/teams/42", nil))
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d", w.Code)
 	}
@@ -114,7 +114,7 @@ func TestTeamHandler_Get_OK(t *testing.T) {
 	stub.get.team = model.Team{ID: 7, Name: "Heat"}
 	r := newRouter(stub)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/teams/7", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/teams/7", nil))
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
 	}

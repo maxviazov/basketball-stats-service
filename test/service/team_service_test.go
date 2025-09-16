@@ -63,6 +63,10 @@ func (f *fakeTeamRepo) GetTeamAggregatedStats(_ context.Context, teamID int64, _
 	}
 	return f.statsResult, nil
 }
+func (f *fakeTeamRepo) Exists(_ context.Context, id int64) (bool, error) {
+	_, ok := f.items[id]
+	return ok, nil
+}
 
 var _ repository.TeamRepository = (*fakeTeamRepo)(nil)
 

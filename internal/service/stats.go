@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/maxviazov/basketball-stats-service/internal/model"
 	"github.com/maxviazov/basketball-stats-service/internal/repository"
@@ -24,16 +23,13 @@ func NewStatsService(stats repository.StatsRepository, players repository.Player
 }
 
 func (s *statsService) UpsertStatLine(ctx context.Context, line model.PlayerStatLine) (model.PlayerStatLine, error) {
-	start := time.Now()
 	var ferrs []FieldError
-
 	if line.PlayerID <= 0 {
 		ferrs = append(ferrs, FieldError{Field: "player_id", Message: "must be > 0"})
 	}
 	if line.GameID <= 0 {
 		ferrs = append(ferrs, FieldError{Field: "game_id", Message: "must be > 0"})
 	}
-	// Basic numeric ranges; negative values are never meaningful here.
 	if line.Points < 0 {
 		ferrs = append(ferrs, FieldError{Field: "points", Message: "must be >= 0"})
 	}
@@ -55,57 +51,45 @@ func (s *statsService) UpsertStatLine(ctx context.Context, line model.PlayerStat
 	if line.Turnovers < 0 {
 		ferrs = append(ferrs, FieldError{Field: "turnovers", Message: "must be >= 0"})
 	}
-	if line.MinutesPlayed < 0 || line.MinutesPlayed > 60 {
-		ferrs = append(ferrs, FieldError{Field: "minutes_played", Message: "must be between 0 and 60"})
+	if line.MinutesPlayed < 0 {
+		ferrs = append(ferrs, FieldError{Field: "minutes_played", Message: "must be >= 0"})
 	}
 
-	if err := newInvalidInput(ferrs); err != nil {
-		s.log.Debug().Interface("field_errors", ferrs).Int64("player_id", line.PlayerID).Int64("game_id", line.GameID).Msg("stat line validation failed (structure)")
+	if err := NewInvalidInputError(ferrs); err != nil {
 		return model.PlayerStatLine{}, err
 	}
 
-	// Existence checks yield field errors instead of pushing FK errors upward.
 	var existenceErrs []FieldError
-	if s.players != nil {
+	if err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if _, err := s.players.GetByID(ctx, line.PlayerID); err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				existenceErrs = append(existenceErrs, FieldError{Field: "player_id", Message: "player does not exist"})
-			} else {
-				return model.PlayerStatLine{}, err
+				return nil // continue checks
 			}
+			return err
 		}
-	}
-	if s.games != nil {
 		if _, err := s.games.GetByID(ctx, line.GameID); err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
 				existenceErrs = append(existenceErrs, FieldError{Field: "game_id", Message: "game does not exist"})
-			} else {
-				return model.PlayerStatLine{}, err
+				return nil // continue checks
 			}
+			return err
 		}
-	}
-	if err := newInvalidInput(existenceErrs); err != nil {
-		s.log.Debug().Interface("field_errors", existenceErrs).Int64("player_id", line.PlayerID).Int64("game_id", line.GameID).Msg("stat line validation failed (existence)")
+		return nil
+	}); err != nil {
 		return model.PlayerStatLine{}, err
 	}
 
-	out, err := s.stats.UpsertStatLine(ctx, line)
-	if err != nil {
-		s.log.Error().Err(err).Int64("player_id", line.PlayerID).Int64("game_id", line.GameID).Msg("upsert stat line failed")
+	if err := NewInvalidInputError(existenceErrs); err != nil {
 		return model.PlayerStatLine{}, err
 	}
-	s.log.Info().Dur("took", time.Since(start)).Int64("stat_id", out.ID).Msg("stat line upserted")
-	return out, nil
+
+	return s.stats.UpsertStatLine(ctx, line)
 }
 
 func (s *statsService) ListStatsByGame(ctx context.Context, gameID int64) ([]model.PlayerStatLine, error) {
 	if gameID <= 0 {
-		return nil, newInvalidInput([]FieldError{{Field: "game_id", Message: "must be > 0"}})
+		return nil, NewInvalidInputError([]FieldError{{Field: "game_id", Message: "must be > 0"}})
 	}
-	res, err := s.stats.ListByGame(ctx, gameID)
-	if err != nil {
-		s.log.Error().Err(err).Int64("game_id", gameID).Msg("list stats by game failed")
-		return nil, err
-	}
-	return res, nil
+	return s.stats.ListByGame(ctx, gameID)
 }

@@ -30,8 +30,8 @@ func (e *invalidInputError) Error() string        { return ErrInvalidInput.Error
 func (e *invalidInputError) Unwrap() error        { return ErrInvalidInput }
 func (e *invalidInputError) Fields() []FieldError { return e.fields }
 
-// newInvalidInput builds an aggregated validation error if any field errors are present.
-func newInvalidInput(fe []FieldError) error {
+// NewInvalidInputError builds an aggregated validation error if any field errors are present.
+func NewInvalidInputError(fe []FieldError) error {
 	if len(fe) == 0 { // protective case
 		return nil
 	}
