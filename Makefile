@@ -39,15 +39,29 @@ build:
 ## Run the service (from sources, without building binary)
 run:
 	@echo "$(YELLOW)🏃 Running service...$(NC)"
-	@set -a; \
+	@tmpfile=$$(mktemp -t bss-run.XXXX); \
+	set -a; \
 	. .env 2>/dev/null || true; \
 	set +a; \
-	go run ./cmd/server
+	bash -c 'set -o pipefail; go run ./cmd/server | tee "$$0"' "$$tmpfile"; \
+	code=$$?; \
+	# If non-zero but graceful termination detected in logs, treat as success
+	if [ "$$code" -ne 0 ] && grep -q "Server exited" "$$tmpfile"; then \
+		code=0; \
+	fi; \
+	rm -f "$$tmpfile"; \
+	if [ "$$code" -eq 0 ] || [ "$$code" -eq 130 ] || [ "$$code" -eq 143 ]; then \
+		echo "$(GREEN)✅ Server stopped gracefully (exit $$code)$(NC)"; \
+		exit 0; \
+	else \
+		echo "$(RED)❌ Server exited with code $$code$(NC)"; \
+		exit $$code; \
+	fi
 
 ## Run tests
-# Используем -coverpkg=./... чтобы инструментировать все пакеты, даже если тесты физически вынесены в ./test/.
-# Так мы получим реальное покрытие, а не 0.0% по internal/*.
-# coverage.out пригодится для CI (загрузка в badge / codecov при желании).
+# Use -coverpkg=./... to instrument all packages even if tests live under ./test/ only.
+# This gives us realistic coverage for internal/*, not 0.0%.
+# coverage.out is used by CI to publish a summary or upload as artifact.
 test:
 	@echo "$(YELLOW)🧪 Running tests (with aggregated coverage)...$(NC)"
 	@$(GOTEST) -race -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...

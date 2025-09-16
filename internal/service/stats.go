@@ -9,6 +9,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const (
+	maxFouls        = 6
+	maxMinutesFloat = 48.0
+)
+
 type statsService struct {
 	stats   repository.StatsRepository
 	players repository.PlayerRepository
@@ -45,14 +50,14 @@ func (s *statsService) UpsertStatLine(ctx context.Context, line model.PlayerStat
 	if line.Blocks < 0 {
 		ferrs = append(ferrs, FieldError{Field: "blocks", Message: "must be >= 0"})
 	}
-	if line.Fouls < 0 {
-		ferrs = append(ferrs, FieldError{Field: "fouls", Message: "must be >= 0"})
+	if line.Fouls < 0 || line.Fouls > maxFouls {
+		ferrs = append(ferrs, FieldError{Field: "fouls", Message: "must be between 0 and 6"})
 	}
 	if line.Turnovers < 0 {
 		ferrs = append(ferrs, FieldError{Field: "turnovers", Message: "must be >= 0"})
 	}
-	if line.MinutesPlayed < 0 {
-		ferrs = append(ferrs, FieldError{Field: "minutes_played", Message: "must be >= 0"})
+	if line.MinutesPlayed < 0 || float64(line.MinutesPlayed) > maxMinutesFloat {
+		ferrs = append(ferrs, FieldError{Field: "minutes_played", Message: "must be between 0 and 48.0"})
 	}
 
 	if err := NewInvalidInputError(ferrs); err != nil {
