@@ -59,7 +59,7 @@ func (f *fakePlayerRepo) GetPlayerAggregatedStats(_ context.Context, playerID in
 
 var _ repository.PlayerRepository = (*fakePlayerRepo)(nil)
 
-type fakeLookupTeamRepo struct{
+type fakeLookupTeamRepo struct {
 	exists map[int64]bool
 	// Embed the full fake repo to satisfy the interface without having to implement all methods.
 	*fakeTeamRepo

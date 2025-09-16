@@ -131,5 +131,4 @@ func (r *playerRepository) GetPlayerAggregatedStats(ctx context.Context, playerI
 	return stats, nil
 }
 
-
 var _ repository.PlayerRepository = (*playerRepository)(nil)
