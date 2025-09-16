@@ -15,4 +15,5 @@ COPY --from=builder /app/server /app/server
 COPY --from=builder /app/config.yaml /app/config.yaml
 COPY --from=builder /app/api /app/api
 EXPOSE 8080
+USER 10001
 ENTRYPOINT ["/app/server"]

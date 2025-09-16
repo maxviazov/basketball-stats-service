@@ -49,12 +49,18 @@ Base path: /api/v1
   - GET /teams/{team_id}/aggregates (alias: /teams/{team_id}/stats/aggregate)
 - Players:
   - POST /players
-  - GET /players/{id}
-  - GET /teams/{team_id}/players
-  - GET /players/{id}/aggregates (alias: /players/{id}/stats/aggregate)
+  - GET /players
+  - GET /players/{player_id}
+  - GET /players/{player_id}/aggregates (alias: /players/{player_id}/stats/aggregate)
+- Games:
+  - POST /games
+  - GET /games
+  - GET /games/{game_id}
+  - GET /games/{game_id}/stats
 - Stats:
-  - POST /stats (upsert stat line)
-  - GET /games/{id}/stats
+  - POST /stats
+  - GET /stats
+  - GET /stats/{stat_id}
 
 Examples (aggregates):
 ```bash

@@ -113,9 +113,9 @@ func (r *playerRepository) GetPlayerAggregatedStats(ctx context.Context, playerI
 			COALESCE(SUM(ps.assists), 0) AS total_assists,
 			COALESCE(SUM(ps.steals), 0) AS total_steals,
 			COALESCE(SUM(ps.blocks), 0) AS total_blocks,
-			COALESCE(AVG(ps.points), 0) AS avg_points,
-			COALESCE(AVG(ps.rebounds), 0) AS avg_rebounds,
-			COALESCE(AVG(ps.assists), 0) AS avg_assists
+			COALESCE(ROUND(AVG(ps.points), 2), 0) AS avg_points,
+			COALESCE(ROUND(AVG(ps.rebounds), 2), 0) AS avg_rebounds,
+			COALESCE(ROUND(AVG(ps.assists), 2), 0) AS avg_assists
 		FROM
 			player_stats ps
 		INNER JOIN games g ON ps.game_id = g.id

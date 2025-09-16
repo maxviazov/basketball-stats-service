@@ -146,8 +146,8 @@ func (r *teamRepository) GetTeamAggregatedStats(ctx context.Context, teamID int6
 			COALESCE(SUM(CASE WHEN loser_id = $1 THEN 1 ELSE 0 END), 0) AS losses,
 			COALESCE(SUM(CASE WHEN home_team_id = $1 THEN home_points ELSE away_points END), 0) AS total_points_scored,
 			COALESCE(SUM(CASE WHEN home_team_id = $1 THEN away_points ELSE home_points END), 0) AS total_points_allowed,
-			COALESCE(AVG(CASE WHEN home_team_id = $1 THEN home_points ELSE away_points END), 0) AS avg_points_scored,
-			COALESCE(AVG(CASE WHEN home_team_id = $1 THEN away_points ELSE home_points END), 0) AS avg_points_allowed
+			COALESCE(ROUND(AVG(CASE WHEN home_team_id = $1 THEN home_points ELSE away_points END), 2), 0) AS avg_points_scored,
+			COALESCE(ROUND(AVG(CASE WHEN home_team_id = $1 THEN away_points ELSE home_points END), 2), 0) AS avg_points_allowed
 		FROM game_results
 		WHERE home_team_id = $1 OR away_team_id = $1
 	`
