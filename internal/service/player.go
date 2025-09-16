@@ -90,3 +90,26 @@ func (s *playerService) ListPlayersByTeam(ctx context.Context, teamID int64, pag
 	}
 	return res, nil
 }
+
+// GetPlayerAggregatedStats retrieves and validates parameters for fetching player statistics.
+// It ensures the player ID is valid and the season format is correct if provided.
+func (s *playerService) GetPlayerAggregatedStats(ctx context.Context, playerID int64, season *string) (model.PlayerAggregatedStats, error) {
+	var ferrs []FieldError
+	if playerID <= 0 {
+		ferrs = append(ferrs, FieldError{Field: "id", Message: "must be > 0"})
+	}
+	if season != nil && !isValidSeason(*season) {
+		ferrs = append(ferrs, FieldError{Field: "season", Message: "must be in YYYY-YY format"})
+	}
+	if err := newInvalidInput(ferrs); err != nil {
+		return model.PlayerAggregatedStats{}, err
+	}
+
+	stats, err := s.players.GetPlayerAggregatedStats(ctx, playerID, season)
+	if err != nil {
+		s.log.Error().Err(err).Int64("player_id", playerID).Msg("failed to get player aggregated stats")
+		return model.PlayerAggregatedStats{}, err
+	}
+
+	return stats, nil
+}

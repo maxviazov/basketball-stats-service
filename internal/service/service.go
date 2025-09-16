@@ -55,6 +55,7 @@ type TeamService interface {
 	CreateTeam(ctx context.Context, name string) (model.Team, error)
 	GetTeam(ctx context.Context, id int64) (model.Team, error)
 	ListTeams(ctx context.Context, page repository.Page) (repository.PageResult[model.Team], error)
+	GetTeamAggregatedStats(ctx context.Context, teamID int64, season *string) (model.TeamAggregatedStats, error)
 }
 
 // PlayerService defines player-oriented use cases.
@@ -62,6 +63,7 @@ type PlayerService interface {
 	CreatePlayer(ctx context.Context, teamID int64, firstName, lastName, position string) (model.Player, error)
 	GetPlayer(ctx context.Context, id int64) (model.Player, error)
 	ListPlayersByTeam(ctx context.Context, teamID int64, page repository.Page) (repository.PageResult[model.Player], error)
+	GetPlayerAggregatedStats(ctx context.Context, playerID int64, season *string) (model.PlayerAggregatedStats, error)
 }
 
 // GameService defines game-oriented use cases.

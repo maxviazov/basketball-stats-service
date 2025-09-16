@@ -83,4 +83,52 @@ func (r *playerRepository) ListByTeam(ctx context.Context, teamID int64, p repos
 	return res, nil
 }
 
+// GetPlayerAggregatedStats calculates and returns a player's aggregated statistics.
+// It can filter stats by a specific season. If season is nil, it calculates career stats.
+// The query joins player_stats with games to filter by season and aggregates the results.
+func (r *playerRepository) GetPlayerAggregatedStats(ctx context.Context, playerID int64, season *string) (model.PlayerAggregatedStats, error) {
+	if err := ensurePool(r.pool); err != nil {
+		return model.PlayerAggregatedStats{}, err
+	}
+
+	query := `
+		SELECT
+			COALESCE(COUNT(ps.id), 0) AS games_played,
+			COALESCE(SUM(ps.points), 0) AS total_points,
+			COALESCE(SUM(ps.rebounds), 0) AS total_rebounds,
+			COALESCE(SUM(ps.assists), 0) AS total_assists,
+			COALESCE(SUM(ps.steals), 0) AS total_steals,
+			COALESCE(SUM(ps.blocks), 0) AS total_blocks,
+			COALESCE(AVG(ps.points), 0) AS avg_points,
+			COALESCE(AVG(ps.rebounds), 0) AS avg_rebounds,
+			COALESCE(AVG(ps.assists), 0) AS avg_assists
+		FROM
+			player_stats ps
+		INNER JOIN games g ON ps.game_id = g.id
+		WHERE
+			ps.player_id = $1 AND ($2::TEXT IS NULL OR g.season = $2)
+	`
+
+	exec := getQ(ctx, r.pool)
+	row := exec.QueryRow(ctx, query, playerID, season)
+
+	var stats model.PlayerAggregatedStats
+	err := row.Scan(
+		&stats.GamesPlayed,
+		&stats.TotalPoints,
+		&stats.TotalRebounds,
+		&stats.TotalAssists,
+		&stats.TotalSteals,
+		&stats.TotalBlocks,
+		&stats.AvgPoints,
+		&stats.AvgRebounds,
+		&stats.AvgAssists,
+	)
+	if err != nil {
+		return model.PlayerAggregatedStats{}, repository.MapPgError(err)
+	}
+
+	return stats, nil
+}
+
 var _ repository.PlayerRepository = (*playerRepository)(nil)

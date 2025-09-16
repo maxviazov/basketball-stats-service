@@ -57,6 +57,9 @@ func (f *fakeExistTeamRepo) GetByID(_ context.Context, id int64) (model.Team, er
 func (f *fakeExistTeamRepo) List(context.Context, repository.Page) (repository.PageResult[model.Team], error) {
 	return repository.PageResult[model.Team]{}, nil
 }
+func (f *fakeExistTeamRepo) GetTeamAggregatedStats(context.Context, int64, *string) (model.TeamAggregatedStats, error) {
+	return model.TeamAggregatedStats{}, nil // Dummy implementation
+}
 
 var _ repository.TeamRepository = (*fakeExistTeamRepo)(nil)
 

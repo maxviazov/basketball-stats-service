@@ -2,14 +2,15 @@ package service_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
-
-	"github.com/rs/zerolog"
 
 	"github.com/maxviazov/basketball-stats-service/internal/model"
 	"github.com/maxviazov/basketball-stats-service/internal/repository"
 	"github.com/maxviazov/basketball-stats-service/internal/service"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeTeamRepo struct {
@@ -17,6 +18,10 @@ type fakeTeamRepo struct {
 	items     map[int64]model.Team
 	createErr error
 	lastPage  repository.Page // capture last page for pagination normalization tests
+
+	// For stats testing
+	statsResult model.TeamAggregatedStats
+	statsErr    error
 }
 
 func newFakeTeamRepo() *fakeTeamRepo {
@@ -47,6 +52,16 @@ func (f *fakeTeamRepo) List(_ context.Context, p repository.Page) (repository.Pa
 	}
 	res.Total = len(res.Items)
 	return res, nil
+}
+
+func (f *fakeTeamRepo) GetTeamAggregatedStats(_ context.Context, teamID int64, _ *string) (model.TeamAggregatedStats, error) {
+	if f.statsErr != nil {
+		return model.TeamAggregatedStats{}, f.statsErr
+	}
+	if _, ok := f.items[teamID]; !ok {
+		return model.TeamAggregatedStats{}, repository.ErrNotFound
+	}
+	return f.statsResult, nil
 }
 
 var _ repository.TeamRepository = (*fakeTeamRepo)(nil)
@@ -134,6 +149,53 @@ func TestTeamService_ListTeams_PaginationNormalization(t *testing.T) {
 	if repo.lastPage.Offset != 0 {
 		t.Fatalf("expected normalized offset=0 got %d", repo.lastPage.Offset)
 	}
+}
+
+func TestTeamService_GetTeamAggregatedStats(t *testing.T) {
+	logger := zerolog.New(io.Discard)
+	repo := newFakeTeamRepo()
+	svc := service.NewTeamService(repo, logger)
+
+	// Seed a team for valid ID checks
+	_, err := repo.Create(context.Background(), model.Team{Name: "Lakers", ID: 1})
+	require.NoError(t, err)
+
+	t.Run("Valid Request", func(t *testing.T) {
+		expected := model.TeamAggregatedStats{Wins: 50, Losses: 32}
+		repo.statsResult = expected
+		repo.statsErr = nil
+
+		stats, err := svc.GetTeamAggregatedStats(context.Background(), 1, nil)
+		require.NoError(t, err)
+		require.Equal(t, expected, stats)
+	})
+
+	t.Run("Invalid Team ID", func(t *testing.T) {
+		_, err := svc.GetTeamAggregatedStats(context.Background(), 0, nil)
+		require.Error(t, err)
+		require.True(t, serviceErrIsInvalid(err), "expected invalid input error")
+		fields := service.FieldErrors(err)
+		require.Len(t, fields, 1)
+		require.Equal(t, "id", fields[0].Field)
+	})
+
+	t.Run("Invalid Season Format", func(t *testing.T) {
+		invalidSeason := "2023-2024" // wrong format
+		_, err := svc.GetTeamAggregatedStats(context.Background(), 1, &invalidSeason)
+		require.Error(t, err)
+		require.True(t, serviceErrIsInvalid(err), "expected invalid input error")
+		fields := service.FieldErrors(err)
+		require.Len(t, fields, 1)
+		require.Equal(t, "season", fields[0].Field)
+	})
+
+	t.Run("Repository Error", func(t *testing.T) {
+		repo.statsErr = errors.New("something went wrong")
+		_, err := svc.GetTeamAggregatedStats(context.Background(), 1, nil)
+		require.Error(t, err)
+		require.False(t, serviceErrIsInvalid(err)) // Should be a direct repo error
+		require.Equal(t, "something went wrong", err.Error())
+	})
 }
 
 func serviceErrIsInvalid(err error) bool {
