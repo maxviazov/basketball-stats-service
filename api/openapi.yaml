@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Basketball Stats Service API
+  version: 1.0.0
+  description: HTTP API for teams, players, games and stats, including aggregated endpoints.
+servers:
+  - url: /api/v1
+paths:
+  /health/live:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /health/ready:
+    get:
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthError'
+  /teams:
+    get:
+      summary: List teams
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Page of teams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResultTeam'
+    post:
+      summary: Create team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 2, maxLength: 50 }
+              required: [name]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '400': { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '409': { description: Conflict, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /teams/{team_id}:
+    get:
+      summary: Get team by ID
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Team' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /teams/{team_id}/aggregates:
+    get:
+      summary: Aggregated statistics for a team
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: season
+          schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" }
+        - in: query
+          name: career
+          schema: { type: boolean }
+          description: If true, returns career aggregates; cannot be used with season.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TeamAggregatedStats' } } } }
+        '400': { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /players:
+    post:
+      summary: Create player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team_id: { type: integer, minimum: 1 }
+                first_name: { type: string, minLength: 1, maxLength: 50 }
+                last_name: { type: string, minLength: 1, maxLength: 50 }
+                position: { type: string, enum: [pg, sg, sf, pf, c] }
+              required: [team_id, first_name, last_name, position]
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Player' } } } }
+        '400': { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '409': { description: Conflict (team not found / FK), content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /players/{id}:
+    get:
+      summary: Get player by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Player' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /teams/{team_id}/players:
+    get:
+      summary: List players by team
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PageResultPlayer' } } } }
+  /players/{id}/aggregates:
+    get:
+      summary: Aggregated statistics for a player
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: season
+          schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" }
+        - in: query
+          name: career
+          schema: { type: boolean }
+          description: If true, returns career aggregates; cannot be used with season.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PlayerAggregatedStats' } } } }
+        '400': { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /stats:
+    post:
+      summary: Upsert a player's stat line for a game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlayerStatLineInput' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PlayerStatLine' } } } }
+        '400': { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '409': { description: Conflict (FK), content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /games/{id}/stats:
+    get:
+      summary: List stat lines for a game
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PlayerStatLine' } } } } }
+        '400': { description: Invalid input, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status: { type: string, example: ready }
+    HealthError:
+      type: object
+      properties:
+        status: { type: string, example: unavailable }
+        error: { type: string }
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string, example: invalid_input }
+        field_errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+    Team:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Player:
+      type: object
+      properties:
+        id: { type: integer }
+        team_id: { type: integer }
+        first_name: { type: string }
+        last_name: { type: string }
+        position: { type: string, enum: [pg, sg, sf, pf, c] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PlayerStatLineInput:
+      type: object
+      properties:
+        player_id: { type: integer }
+        game_id: { type: integer }
+        points: { type: integer, minimum: 0 }
+        rebounds: { type: integer, minimum: 0 }
+        assists: { type: integer, minimum: 0 }
+        steals: { type: integer, minimum: 0 }
+        blocks: { type: integer, minimum: 0 }
+        fouls: { type: integer, minimum: 0 }
+        turnovers: { type: integer, minimum: 0 }
+        minutes_played: { type: number, minimum: 0, maximum: 60 }
+      required: [player_id, game_id]
+    PlayerStatLine:
+      allOf:
+        - $ref: '#/components/schemas/PlayerStatLineInput'
+        - type: object
+          properties:
+            id: { type: integer }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    TeamAggregatedStats:
+      type: object
+      properties:
+        games_played: { type: integer }
+        wins: { type: integer }
+        losses: { type: integer }
+        avg_points: { type: number }
+        avg_rebounds: { type: number }
+        avg_assists: { type: number }
+    PlayerAggregatedStats:
+      type: object
+      properties:
+        games_played: { type: integer }
+        total_points: { type: integer }
+        total_rebounds: { type: integer }
+        total_assists: { type: integer }
+        avg_points: { type: number }
+        avg_rebounds: { type: number }
+        avg_assists: { type: number }
+    Page:
+      type: object
+      properties:
+        limit: { type: integer }
+        offset: { type: integer }
+    PageResultTeam:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Team' }
+        total: { type: integer }
+    PageResultPlayer:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Player' }
+        total: { type: integer }

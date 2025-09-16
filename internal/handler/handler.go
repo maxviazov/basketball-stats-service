@@ -14,6 +14,9 @@ func Register(r *gin.Engine, repo Pinger, teamSvc service.TeamService, playerSvc
 	r.GET("/live", h.Liveness)
 	r.GET("/ready", h.Readiness)
 
+	// Docs endpoints (root-level)
+	RegisterDocs(r)
+
 	api := r.Group(APIV1Prefix) // Versioning added via single source of truth
 	{
 		health := api.Group("/health")
