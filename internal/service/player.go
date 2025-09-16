@@ -48,7 +48,7 @@ func (s *playerService) CreatePlayer(ctx context.Context, teamID int64, firstNam
 		ferrs = append(ferrs, FieldError{Field: "position", Message: "must be one of PG, SG, SF, PF, C"})
 	}
 
-	if err := newInvalidInput(ferrs); err != nil {
+	if err := NewInvalidInputError(ferrs); err != nil {
 		s.log.Debug().Interface("field_errors", ferrs).Str("fn_raw", rawFirst).Str("ln_raw", rawLast).Str("pos_raw", rawPos).Msg("player validation failed")
 		return model.Player{}, err
 	}
@@ -57,7 +57,7 @@ func (s *playerService) CreatePlayer(ctx context.Context, teamID int64, firstNam
 	if _, err := s.teams.GetByID(ctx, teamID); err != nil {
 		if err == repository.ErrNotFound { // cheap direct compare; could use errors.Is if wrapped
 			ferrs = append(ferrs, FieldError{Field: "team_id", Message: "team does not exist"})
-			return model.Player{}, newInvalidInput(ferrs)
+			return model.Player{}, NewInvalidInputError(ferrs)
 		}
 		return model.Player{}, err
 	}
@@ -73,14 +73,14 @@ func (s *playerService) CreatePlayer(ctx context.Context, teamID int64, firstNam
 
 func (s *playerService) GetPlayer(ctx context.Context, id int64) (model.Player, error) {
 	if id <= 0 {
-		return model.Player{}, newInvalidInput([]FieldError{{Field: "id", Message: "must be > 0"}})
+		return model.Player{}, NewInvalidInputError([]FieldError{{Field: "id", Message: "must be > 0"}})
 	}
 	return s.players.GetByID(ctx, id)
 }
 
 func (s *playerService) ListPlayersByTeam(ctx context.Context, teamID int64, page repository.Page) (repository.PageResult[model.Player], error) {
 	if teamID <= 0 {
-		return repository.PageResult[model.Player]{}, newInvalidInput([]FieldError{{Field: "team_id", Message: "must be > 0"}})
+		return repository.PageResult[model.Player]{}, NewInvalidInputError([]FieldError{{Field: "team_id", Message: "must be > 0"}})
 	}
 	p := normalizePage(page)
 	res, err := s.players.ListByTeam(ctx, teamID, p)
@@ -98,11 +98,21 @@ func (s *playerService) GetPlayerAggregatedStats(ctx context.Context, playerID i
 	if playerID <= 0 {
 		ferrs = append(ferrs, FieldError{Field: "id", Message: "must be > 0"})
 	}
-	if season != nil && !isValidSeason(*season) {
+	if season != nil && !IsValidSeason(*season) {
 		ferrs = append(ferrs, FieldError{Field: "season", Message: "must be in YYYY-YY format"})
 	}
-	if err := newInvalidInput(ferrs); err != nil {
+	if err := NewInvalidInputError(ferrs); err != nil {
 		return model.PlayerAggregatedStats{}, err
+	}
+
+	// Perform a lightweight existence check before running a heavy aggregation query.
+	exists, err := s.players.Exists(ctx, playerID)
+	if err != nil {
+		s.log.Error().Err(err).Int64("player_id", playerID).Msg("failed to check player existence")
+		return model.PlayerAggregatedStats{}, err
+	}
+	if !exists {
+		return model.PlayerAggregatedStats{}, repository.ErrNotFound
 	}
 
 	stats, err := s.players.GetPlayerAggregatedStats(ctx, playerID, season)

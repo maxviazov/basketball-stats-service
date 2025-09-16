@@ -52,10 +52,8 @@ func isValidGameStatus(status string) bool {
 	}
 }
 
-func isValidSeason(season string) bool {
+// IsValidSeason checks if the season string conforms to the YYYY-YY format.
+func IsValidSeason(season string) bool {
 	s := strings.TrimSpace(season)
-	if !seasonRe.MatchString(s) {
-		return false
-	}
-	return true // формат базово валиден
+	return seasonRe.MatchString(s)
 }

@@ -27,7 +27,8 @@ func newEngine(p handler.Pinger) *gin.Engine {
 func TestReadiness_OK(t *testing.T) {
 	r := newEngine(stubPinger{err: nil})
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/health/ready", nil))
+	// Adjust to versioned path registered by handler.Register
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/health/ready", nil))
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d, body=%s", w.Code, w.Body.String())
 	}
@@ -36,7 +37,7 @@ func TestReadiness_OK(t *testing.T) {
 func TestReadiness_Unavailable(t *testing.T) {
 	r := newEngine(stubPinger{err: errors.New("db down")})
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/health/ready", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/health/ready", nil))
 	if w.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected status 503, got %d, body=%s", w.Code, w.Body.String())
 	}
@@ -82,7 +83,7 @@ func TestReadiness_MethodNotAllowed(t *testing.T) {
 	r := newEngine(stubPinger{err: nil})
 	w := httptest.NewRecorder()
 	// Gin by default returns 404 for unknown method if route only registered for GET.
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/health/ready", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/health/ready", nil))
 	if w.Code != http.StatusNotFound && w.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("expected 404 or 405, got %d", w.Code)
 	}

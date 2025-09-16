@@ -61,9 +61,9 @@ type PlayerAggregatedStats struct {
 	TotalAssists  int     `json:"total_assists"`
 	TotalSteals   int     `json:"total_steals"`
 	TotalBlocks   int     `json:"total_blocks"`
-	AvgPoints     float32 `json:"avg_points"`
-	AvgRebounds   float32 `json:"avg_rebounds"`
-	AvgAssists    float32 `json:"avg_assists"`
+	AvgPoints     float64 `json:"avg_points"`
+	AvgRebounds   float64 `json:"avg_rebounds"`
+	AvgAssists    float64 `json:"avg_assists"`
 }
 
 // TeamAggregatedStats provides a summary of a team's performance, including win-loss record and point differentials.
@@ -73,6 +73,6 @@ type TeamAggregatedStats struct {
 	Losses             int     `json:"losses"`
 	TotalPointsScored  int     `json:"total_points_scored"`
 	TotalPointsAllowed int     `json:"total_points_allowed"`
-	AvgPointsScored    float32 `json:"avg_points_scored"`
-	AvgPointsAllowed   float32 `json:"avg_points_allowed"`
+	AvgPointsScored    float64 `json:"avg_points_scored"`
+	AvgPointsAllowed   float64 `json:"avg_points_allowed"`
 }

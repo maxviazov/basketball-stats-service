@@ -34,7 +34,7 @@ func (s *teamService) CreateTeam(ctx context.Context, name string) (model.Team, 
 			ferrs = append(ferrs, FieldError{Field: "name", Message: "length must be between 2 and 50"})
 		}
 	}
-	if err := newInvalidInput(ferrs); err != nil {
+	if err := NewInvalidInputError(ferrs); err != nil {
 		s.log.Debug().Str("name_raw", original).Interface("field_errors", ferrs).Msg("team validation failed")
 		return model.Team{}, err
 	}
@@ -51,7 +51,7 @@ func (s *teamService) CreateTeam(ctx context.Context, name string) (model.Team, 
 
 func (s *teamService) GetTeam(ctx context.Context, id int64) (model.Team, error) {
 	if id <= 0 {
-		return model.Team{}, newInvalidInput([]FieldError{{Field: "id", Message: "must be > 0"}})
+		return model.Team{}, NewInvalidInputError([]FieldError{{Field: "id", Message: "must be > 0"}})
 	}
 	return s.repo.GetByID(ctx, id)
 }
@@ -74,11 +74,21 @@ func (s *teamService) GetTeamAggregatedStats(ctx context.Context, teamID int64, 
 		ferrs = append(ferrs, FieldError{Field: "id", Message: "must be > 0"})
 	}
 	// A non-nil season string must conform to the expected format.
-	if season != nil && !isValidSeason(*season) {
+	if season != nil && !IsValidSeason(*season) {
 		ferrs = append(ferrs, FieldError{Field: "season", Message: "must be in YYYY-YY format"})
 	}
-	if err := newInvalidInput(ferrs); err != nil {
+	if err := NewInvalidInputError(ferrs); err != nil {
 		return model.TeamAggregatedStats{}, err
+	}
+
+	// Perform a lightweight existence check before running a heavy aggregation query.
+	exists, err := s.repo.Exists(ctx, teamID)
+	if err != nil {
+		s.log.Error().Err(err).Int64("team_id", teamID).Msg("failed to check team existence")
+		return model.TeamAggregatedStats{}, err
+	}
+	if !exists {
+		return model.TeamAggregatedStats{}, repository.ErrNotFound
 	}
 
 	stats, err := s.repo.GetTeamAggregatedStats(ctx, teamID, season)

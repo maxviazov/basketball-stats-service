@@ -56,6 +56,10 @@ func (f *fakePlayerRepo) GetPlayerAggregatedStats(_ context.Context, playerID in
 	}
 	return f.statsResult, nil
 }
+func (f *fakePlayerRepo) Exists(_ context.Context, id int64) (bool, error) {
+	_, ok := f.players[id]
+	return ok, nil
+}
 
 var _ repository.PlayerRepository = (*fakePlayerRepo)(nil)
 
@@ -78,6 +82,9 @@ func (f *fakeLookupTeamRepo) GetByID(_ context.Context, id int64) (model.Team, e
 		return model.Team{ID: id, Name: "X"}, nil
 	}
 	return model.Team{}, repository.ErrNotFound
+}
+func (f *fakeLookupTeamRepo) Exists(_ context.Context, id int64) (bool, error) {
+	return f.exists[id], nil
 }
 
 func TestPlayerService_CreatePlayer_Validation(t *testing.T) {
