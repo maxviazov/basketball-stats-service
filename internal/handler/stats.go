@@ -19,8 +19,8 @@ func NewStatsHandler(svc service.StatsService) *StatsHandler { return &StatsHand
 func (h *StatsHandler) Register(r *gin.RouterGroup) {
 	// Upsert endpoint
 	r.Group("/stats").POST("", h.upsert)
-	// Listing by game id: /api/games/:id/stats
-	r.Group("/games").GET(":id/stats", h.listByGame)
+	// Listing by game id: /api/v1/games/:id/stats
+	r.Group("/games").GET("/:id/stats", h.listByGame)
 }
 
 type upsertStatRequest struct {
@@ -62,7 +62,12 @@ func (h *StatsHandler) upsert(c *gin.Context) {
 }
 
 func (h *StatsHandler) listByGame(c *gin.Context) {
-	gameID, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	idStr := c.Param("id")
+	gameID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || gameID <= 0 {
+		response.WriteError(c, service.NewInvalidInputError([]service.FieldError{{Field: "id", Message: "must be a valid integer > 0"}}))
+		return
+	}
 	lines, err := h.svc.ListStatsByGame(c.Request.Context(), gameID)
 	if err != nil {
 		response.WriteError(c, err)

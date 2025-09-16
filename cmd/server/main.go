@@ -42,7 +42,6 @@ func main() {
 	if err != nil {
 		appLogger.Fatal().Err(err).Msg("failed to init repository")
 	}
-	defer repo.Close()
 
 	// Wire repositories (postgres implementations) and services
 	pool := repo.Pool()
@@ -92,5 +91,10 @@ func main() {
 		appLogger.Error().Err(err).Msg("server forced to shutdown")
 	}
 
+	// Close repository pool explicitly before exiting
+	repo.Close()
+
 	appLogger.Info().Msg("Server exited")
+	// Guarantee success exit code for local runs (make run)
+	os.Exit(0)
 }

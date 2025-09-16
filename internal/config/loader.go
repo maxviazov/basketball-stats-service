@@ -37,6 +37,12 @@ func Load(path string) (*Config, error) {
 	if err := v.BindEnv("postgres.dbname", "APP_POSTGRES_DB", "POSTGRES_DB", "DB_NAME"); err != nil {
 		return nil, err
 	}
+	// Optional: host/port/sslmode overrides
+	_ = v.BindEnv("postgres.host", "APP_POSTGRES_HOST", "POSTGRES_HOST")
+	_ = v.BindEnv("postgres.port", "APP_POSTGRES_PORT", "POSTGRES_PORT")
+	_ = v.BindEnv("postgres.sslmode", "APP_POSTGRES_SSLMODE", "POSTGRES_SSLMODE")
+	// app.port: allow APP_APP_PORT or APP_PORT
+	_ = v.BindEnv("app.port", "APP_APP_PORT", "APP_PORT")
 
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {
@@ -44,7 +50,15 @@ func Load(path string) (*Config, error) {
 	}
 
 	// Ensure env-bound keys are materialized so Unmarshal sees them even if absent in YAML
-	for _, key := range []string{"postgres.user", "postgres.password", "postgres.dbname"} {
+	for _, key := range []string{
+		"postgres.user",
+		"postgres.password",
+		"postgres.dbname",
+		"postgres.host",
+		"postgres.port",
+		"postgres.sslmode",
+		"app.port",
+	} {
 		if val := v.GetString(key); val != "" {
 			v.Set(key, val)
 		}
