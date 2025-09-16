@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+  <style>
+    .title { font: 700 20px sans-serif; }
+    .label { font: 600 14px sans-serif; }
+    .note { font: 12px sans-serif; fill: #444; }
+    .box { fill:#fff; stroke:#0f172a; stroke-width:1.5; rx:8; }
+    .cloud { fill:#eef2ff; stroke:#3730a3; stroke-width:1.5; rx:10; }
+    .arrow { stroke:#0f172a; stroke-width:1.5; marker-end:url(#arrow); fill:none; }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#0f172a"/>
+    </marker>
+  </defs>
+  <text x="20" y="30" class="title">Production deployment (cloud sketch)</text>
+
+  <!-- ALB / Ingress -->
+  <rect x="60" y="90" width="220" height="80" class="cloud"/>
+  <text x="80" y="120" class="label">Load Balancer / Ingress</text>
+  <text x="80" y="140" class="note">TLS termination, /live /ready checks</text>
+
+  <!-- App Service -->
+  <rect x="360" y="70" width="260" height="120" class="box"/>
+  <text x="380" y="110" class="label">App Service (ECS/EKS)</text>
+  <text x="380" y="130" class="note">stateless containers, autoscaling</text>
+
+  <!-- Postgres -->
+  <rect x="360" y="250" width="260" height="110" class="box"/>
+  <text x="380" y="285" class="label">PostgreSQL (RDS)</text>
+  <text x="380" y="305" class="note">multi-AZ, backups, monitoring</text>
+
+  <!-- Secrets -->
+  <rect x="680" y="70" width="240" height="80" class="box"/>
+  <text x="700" y="110" class="label">Secrets Manager</text>
+
+  <!-- Observability -->
+  <rect x="680" y="200" width="240" height="120" class="box"/>
+  <text x="700" y="235" class="label">Observability</text>
+  <text x="700" y="255" class="note">logs, metrics, alerts</text>
+
+  <!-- Arrows -->
+  <line x1="280" y1="130" x2="360" y2="130" class="arrow"/>
+  <line x1="490" y1="190" x2="490" y2="250" class="arrow"/>
+  <line x1="620" y1="110" x2="680" y2="110" class="arrow"/>
+  <line x1="620" y1="260" x2="680" y2="260" class="arrow"/>
+</svg>

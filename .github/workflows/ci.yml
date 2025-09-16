@@ -63,6 +63,11 @@ jobs:
           version: latest
           args: --timeout=5m
 
+      - name: Validate OpenAPI (Redocly)
+        run: |
+          npm i -g @redocly/cli
+          redocly lint api/openapi.yaml
+
       - name: Wait for Postgres (service health)
         run: |
           for i in {1..30}; do

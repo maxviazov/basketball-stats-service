@@ -88,6 +88,8 @@ func TestStatsService_UpsertStatLine_Validation(t *testing.T) {
 		{"negative stat", model.PlayerStatLine{PlayerID: 2, GameID: 3, Points: -1}, true, "points"},
 		{"player missing", model.PlayerStatLine{PlayerID: 9, GameID: 3}, true, "player_id"},
 		{"game missing", model.PlayerStatLine{PlayerID: 2, GameID: 99}, true, "game_id"},
+		{"fouls over max", model.PlayerStatLine{PlayerID: 2, GameID: 3, Fouls: 7}, true, "fouls"},
+		{"minutes too high", model.PlayerStatLine{PlayerID: 2, GameID: 3, MinutesPlayed: 49.0}, true, "minutes_played"},
 		{"ok", model.PlayerStatLine{PlayerID: 2, GameID: 3, Points: 10}, false, ""},
 	}
 	for _, tc := range cases {

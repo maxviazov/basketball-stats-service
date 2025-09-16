@@ -2,6 +2,8 @@
 
 A production-grade, containerized service for logging NBA player statistics and serving up-to-date aggregates. Built in Go with clean architecture and a focus on validation, reliability, and developer ergonomics.
 
+![Architecture](docs/diagrams/architecture.svg)
+
 ## Highlights
 - Clean architecture: Handlers → Services → Repositories → Postgres.
 - Strong validation in the service layer; consistent HTTP error mapping.
@@ -98,6 +100,8 @@ See .env.example for a starter set.
 ## Architecture & deployment
 - System architecture: docs/ARCHITECTURE.md
 - Cloud deployment sketch (AWS/GCP/Azure): docs/DEPLOYMENT.md
+
+![Deployment](docs/diagrams/deployment.svg)
 
 In short: the service runs as a stateless container behind a load balancer and talks to Postgres. Horizontal scaling is straightforward; repository layer is designed for contract testing and future persistence adapters.
 
