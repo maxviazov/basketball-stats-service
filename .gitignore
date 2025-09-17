@@ -27,6 +27,7 @@ logs/
 
 # Env files (keep example only)
 .env
+!.env.example
 
 # Go tooling
 trace.out
