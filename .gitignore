@@ -1,52 +1,39 @@
-# Coverage reports
-coverage.out
-coverage.html
-coverage/
-*.cov
-*.coverprofile
-*.pprof
-
-# IDE/editor config
-.idea/
-*.iml
-.vscode/
-.fleet/
-
-# Logs
-*.log
-/test/logs/
-
-# OS junk
-.DS_Store
-Thumbs.db
-
-# Build artifacts
+# Binaries
 bin/
-build/
-dist/
-out/
-
-# Go build/test binaries
-*.test
 *.exe
 *.dll
 *.so
 *.dylib
 
-# Temporary files
-*.tmp
-*.swp
-*.swo
-*~
+# Build / cache
+.dist/
+/build/
+coverage.out
+coverage.html
+*.coverprofile
 
-# Env and local tooling (keep .env.example tracked)
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+
+# Logs / runtime artifacts
+logs/
+*.log
+/tmp/
+
+# OS noise
+.DS_Store
+
+# Env files (keep example only)
 .env
-.env.local
-.env.*.local
-!.env.example
-.envrc
-.direnv/
 
-# Go workspace files (usually local-only; skip if you commit workspace)
-go.work
-go.work.sum
+# Go tooling
+trace.out
+pprof/
+
+# Swagger generated (if any future codegen)
+api/gen/
+
+# Docker
+*.pid
